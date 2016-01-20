@@ -7,7 +7,6 @@ require 'sensi/account'
 require 'sensi/thermostat_connection'
 require 'sensi/thermostat'
 require 'sensi/utils'
-# require 'sensi/response'
 
 
 module Sensi

@@ -5,7 +5,10 @@ module Sensi
 
 	class PollResponse < HashToObject
 
+		attr_reader :json
+
 		def initialize(json)
+			@json = json
 			convert(json)
 		end
 

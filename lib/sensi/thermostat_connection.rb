@@ -40,7 +40,7 @@ module Sensi
   	end
 
 
-    def update_setting(device_id, setting, *args)
+    def set(device_id, setting, *args)
       setting_args = [device_id]
       args.each do |arg|
         setting_args.push(arg)
@@ -52,7 +52,8 @@ module Sensi
         body: encode("{H: 'thermostat-v1', M: '#{setting}', A: #{setting_args}, I: 0}"), 
         headers: {"Cookie" => @account.auth_cookie}
         )
-      response
+      #response
+      response.code == 200
     end
 
   	def connect
@@ -80,7 +81,7 @@ module Sensi
   	# end
 
     def initialize_polling(device_id)
-      update_setting(device_id, 'Subscribe')
+      set(device_id, 'Subscribe')
     end
 
   	def start_polling
