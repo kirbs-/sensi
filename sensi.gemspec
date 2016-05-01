@@ -9,9 +9,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Chris Kirby"]
   spec.email         = ["kirbycm@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{Emmerson Sensi thermostat API wrapper.}
+  spec.description   = %q{Emmerson Sensi thermostat API wrapper.}
+  spec.homepage      = "https://github.com/kirbs-/sensi"
   spec.license       = "GNU General Public License v2.0"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
@@ -26,6 +26,10 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  spec.add_dependency 'httparty', "~> 0.13"
+  spec.add_dependency 'json', "~> 1.8"
+  spec.add_dependency 'curb', "~> 0.7"
 
   spec.add_development_dependency "bundler", "~> 1.10"
   spec.add_development_dependency "rake", "~> 10.0"
