@@ -6,10 +6,11 @@ module Sensi
 
 	class Thermostat < HashToObject
 
-		attr_accessor :account, :thermostat_connection
+		attr_accessor :account, :thermostat_connection, :response
 
 		@account
 		@thermostat_connection
+		@response
 
 		#private vars
 		@mode
@@ -47,13 +48,7 @@ module Sensi
 				attempt += 1
 			end
 
-			@heat = settings.heat_setpoint
-			@cool = settings.cool_setpoint
-			@mode = system_mode
-			@schedule = nil
-			@fan = 'Auto'
-
-			return connected_to_device?
+			connected_to_device?
 		end
 
 		def connected_to_device?
@@ -63,9 +58,20 @@ module Sensi
 		end
 
 		def update
-			response = @thermostat_connection.poll
-			self.m.a.operational_status = response.m.a.operational_status unless response.timed_out?
+			@response = @thermostat_connection.poll
+			update_self(self, @response)
 			!response.timed_out?
+		end
+
+		def update_self(hto, response)
+			datums = (response.methods - Object.new.methods).reject!{|i| i.to_s =~ /=|convert|contains_hash|add|json/ }
+			datums.each do |data|
+				if data.class == Sensi::HashToObject
+					update_self(hto.send(data), response.send(data))
+				else
+					hto.send((data.to_s + '=').to_sym, response.send(data))
+				end
+			end
 		end
 
 		def system_modes
@@ -90,6 +96,10 @@ module Sensi
 			"0"
 		end
 
+		def system_fan
+			self.m.a.environment_controls.fan_mode
+		end
+
 		def temperature(scale: :F)
 			case scale
 			when :F
@@ -109,10 +119,6 @@ module Sensi
 			self.m.a.operational_status.operating_mode
 		end
 
-		def system_fan
-			nil
-		end
-
 		# def set(mode: nil, temp: 70, scale: :F, fan: :auto, schedule: :off)
 		def set(args)
 			# case mode
@@ -124,9 +130,10 @@ module Sensi
 			args.each do |k, v|
 				case k
 				when :mode
-					@thermostat_connection.set(self.icd, 'SetSystemMode', v.to_s.capitalize) unless system_mode == mode.to_s.capitalize
+					# puts "#{system_mode}:#{v.to_s.capitalize}"
+					return update_system_mode v
 				when :fan
-					@thermostat_connection.set(self.icd, 'SetFanMode', v.to_s.capitalize) unless system_fan_on?
+					return update_fan v
 				when :temp
 					@thermostat_connection.set(self.icd, 'SetHeat', v.to_s.capitalize, scale.to_s.capitalize) unless system_temperature(:heat) == temp
 
@@ -198,7 +205,39 @@ module Sensi
 		# end
 
 		def system_fan_on?
-			nil
+			system_fan == 'On'
+		end
+
+		def system_fan_off?
+			system_fan == 'Auto'
+		end
+
+		def update_system_mode(state)
+			if system_mode == state.to_s.capitalize
+				return false
+			else 
+				result = @thermostat_connection.set(self.icd, 'SetSystemMode', state.to_s.capitalize)  
+				update
+				return result
+			end
+		end
+
+		def update_fan(state)
+			if system_fan == state.to_s.capitalize
+				return false
+			else
+				result = @thermostat_connection.set(self.icd, 'SetFanMode', state.to_s.capitalize) 
+				update
+				return result
+			end
+			# case state
+			# when 'On'
+			# 	return @thermostat_connection.set(self.icd, 'SetFanMode', state.to_s.capitalize) unless system_fan_on?
+			# when 'Auto'
+			# 	return @thermostat_connection.set(self.icd, 'SetFanMode', state.to_s.capitalize) unless system_fan_off?
+			# else
+			# 	raise StandarError, "#{v} is not a valid fan state."
+			# end
 		end
 
 

@@ -1,7 +1,7 @@
 # Sensi
 API Wrapper for Emersion Sensi WiFi Thermostats.
 
-**This gem is currently in development. Expect API breaking changes on each release. **
+**This gem is currently in development. Expect API breaking changes on each release.**
 
 ## Installation
 
