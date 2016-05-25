@@ -5,11 +5,14 @@ module Sensi
 
 	class PollResponse < HashToObject
 
-		attr_reader :json
+		attr_reader :json, :code
 
 		def initialize(json)
 			@json = json
 			convert(json)
+			@code = 200
+		rescue
+			@code = 500
 		end
 
 		def message_id
@@ -18,6 +21,8 @@ module Sensi
 
 		def groups_token
 			self.g
+		rescue 
+			nil
 		end
 
 		def timed_out?

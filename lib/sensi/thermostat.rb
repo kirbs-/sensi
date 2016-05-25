@@ -1,6 +1,7 @@
 require "sensi/version"
 require 'sensi/hash_to_object'
 require 'sensi/thermostat_connection'
+require 'byebug'
 
 module Sensi
 
@@ -19,7 +20,7 @@ module Sensi
 		@fan
 		@schedule
 
-		def initialize(login, password)
+		def initialize(login, password, json = nil)
 			@account = Sensi::Account.new(login, password)
 			@thermostat_connection = Sensi::ThermostatConnection.new(@account)
 		end
@@ -44,7 +45,8 @@ module Sensi
 			while not connected_to_device? and attempt < connection_attempt
 				@thermostat_connection.connect
 				@thermostat_connection.initialize_polling(self.icd)
-				convert(@thermostat_connection.start_polling)
+				@response = @thermostat_connection.start_polling
+				convert(@response)
 				attempt += 1
 			end
 
@@ -57,19 +59,40 @@ module Sensi
 			false
 		end
 
-		def update
-			@response = @thermostat_connection.poll
-			update_self(self, @response)
-			!response.timed_out?
+		def valid_response?
+			# debugger
+			@response.respond_to?(:m) and @response.m.class == Sensi::HashToObject
+		rescue StandardError
+			return false
+		end
+
+		def update(attempts = 3)
+			@response = nil
+			attempt = 0
+			# debugger
+			while attempt < attempts and not valid_response?
+				@response = @thermostat_connection.poll
+				attempt += 1
+			end
+
+			return false if @response.code != 200
+
+			update_self(self, @response) if valid_response?
+			!@response.timed_out? and valid_response?
 		end
 
 		def update_self(hto, response)
-			datums = (response.methods - Object.new.methods).reject!{|i| i.to_s =~ /=|convert|contains_hash|add|json/ }
+			datums = (response.methods - Object.new.methods).reject!{|i| i.to_s =~ /=|\?|convert|contains_hash|add|json|message_id|groups_token/ }
 			datums.each do |data|
-				if data.class == Sensi::HashToObject
+				# debugger
+				if hto.respond_to?(data) and  hto.send(data).class == Sensi::PollResponse and response.send(data).class == Sensi::PollResponse
 					update_self(hto.send(data), response.send(data))
-				else
+				elsif hto.respond_to?(data) and  hto.send(data).class == Sensi::HashToObject and response.send(data).class == Sensi::HashToObject
+					update_self(hto.send(data), response.send(data))
+				elsif hto.respond_to?(data) and response.send(data).class == Sensi::PollResponse
 					hto.send((data.to_s + '=').to_sym, response.send(data))
+				else 
+					hto.add_var(data.to_s, response.send(data))
 				end
 			end
 		end
@@ -100,7 +123,7 @@ module Sensi
 			self.m.a.environment_controls.fan_mode
 		end
 
-		def temperature(scale: :F)
+		def temperature(scale = :F)
 			case scale
 			when :F
 				return self.m.a.operational_status.temperature.f 
@@ -116,7 +139,7 @@ module Sensi
 		end
 
 		def system_mode
-			self.m.a.operational_status.operating_mode
+			self.m.a.environment_controls.system_mode
 		end
 
 		# def set(mode: nil, temp: 70, scale: :F, fan: :auto, schedule: :off)
@@ -185,6 +208,10 @@ module Sensi
 			system_mode =- 'Auto'
 		end
 
+		def system_active?
+			active_mode != 'Off'
+		end
+
 		def system_temperature(type)
 			case type
 			when :heat
@@ -239,6 +266,24 @@ module Sensi
 			# 	raise StandarError, "#{v} is not a valid fan state."
 			# end
 		end
+
+		def to_json
+        	hash = {}
+	        self.instance_variables.each do |var|
+	        	if var.is_a? HashToObject
+	        		hash[var.to_s.delete("@")] = self.instance_variable_get var.to_json
+	        	else
+	            	hash[var.to_s.delete("@")] = self.instance_variable_get var
+	            end
+	        end
+	        hash.to_json
+	    end
+
+	    def from_json!(string)
+	        JSON.load(string).each do |var, val|
+	            self.instance_variable_set var, val
+	        end
+	    end
 
 
   	end

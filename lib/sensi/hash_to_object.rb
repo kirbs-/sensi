@@ -7,7 +7,7 @@ module Sensi
 
 		TEST = {'C': 'abc', 'A': ["hi", {:should=>"see"}], 'M': ['on','off','shutdown'], 'D': {'hola': 'hello'}, num: 5}
 
-	  	def initialize(hash = TEST, debug = false)
+	  	def initialize(hash = TEST, debug = false, json = nil)
 	      	convert(hash, debug)
 	    end
 
@@ -67,6 +67,24 @@ module Sensi
 		    	define_method( "#{k.underscore}=", proc{ |v| instance_variable_set("@#{k.underscore}", v) } )
 	    	end
 	    	self.instance_variable_set("@#{k.underscore}", v)
+	    end
+
+	    def to_json
+        	hash = {}
+	        self.instance_variables.each do |var|
+	        	if var.is_a? HashToObject
+	        		hash[var] = self.instance_variable_get(var).to_json
+	        	else
+	            	hash[var] = self.instance_variable_get(var)
+	            end
+	        end
+	        hash.to_json
+	    end
+	    
+	    def from_json!(string)
+	        JSON.load(string).each do |var, val|
+	            self.instance_variable_set var, val
+	        end
 	    end
 
   	end
