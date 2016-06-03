@@ -158,9 +158,7 @@ module Sensi
 				when :fan
 					return update_fan v
 				when :temp
-					@thermostat_connection.set(self.icd, 'SetHeat', v.to_s.capitalize, scale.to_s.capitalize) unless system_temperature(:heat) == temp
-
-					@thermostat_connection.set(self.icd, 'SetCool', v.to_s.capitalize, scale.to_s.capitalize) unless system_temperature(:cool) == temp
+					return update_temp v
 				when :schedule
 					@thermostat_connection.set(self.icd, 'SetScheduleMode', v.to_s.capitalize) unless system_schedule == args
 				end
@@ -212,14 +210,16 @@ module Sensi
 			active_mode != 'Off'
 		end
 
-		def system_temperature(type)
+		def system_temperature(type: nil)
+			type = system_mode.downcase.to_sym if type.nil?
+
 			case type
 			when :heat
 				return settings.heat_setpoint.f
 			when :cool
 				return settings.cool_setpoint.f
 			else
-				raise ArgumentError, "Type #{type} not valid."
+				raise ArgumentError, "Type :#{type.to_s} not valid."
 			end
 		end
 
@@ -265,6 +265,27 @@ module Sensi
 			# else
 			# 	raise StandarError, "#{v} is not a valid fan state."
 			# end
+		end
+
+		def update_temp(temperature, mode: nil, scale: :F)
+			mode = system_mode if mode.nil?
+
+			case mode
+			when 'Heat'
+				return true if system_temperature(type: :heat) == temperature
+				result = @thermostat_connection.set(self.icd, 'SetHeat', temperature.to_s.capitalize, scale.to_s.capitalize) 
+			when 'Cool'
+				return true if system_temperature(type: :cool) == temperature
+				result = @thermostat_connection.set(self.icd, 'SetCool', temperature.to_s.capitalize, scale.to_s.capitalize) 
+			when 'Off'
+
+			when 'Auto'
+
+			when 'Aux'
+
+			end
+			update
+			result
 		end
 
 		def to_json
