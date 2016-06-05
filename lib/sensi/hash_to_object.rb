@@ -5,7 +5,7 @@ module Sensi
 
 	class HashToObject
 
-		TEST = {'C': 'abc', 'A': ["hi", {:should=>"see"}], 'M': ['on','off','shutdown'], 'D': {'hola': 'hello'}, num: 5}
+		# TEST = {'C': 'abc', 'A': ["hi", {:should=>"see"}], 'M': ['on','off','shutdown'], 'D': {'hola': 'hello'}, num: 5}
 
 	  	def initialize(hash = TEST, debug = false, json = nil)
 	      	convert(hash, debug)
