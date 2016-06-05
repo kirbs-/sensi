@@ -1,7 +1,7 @@
 require "sensi/version"
 require 'sensi/hash_to_object'
 require 'sensi/thermostat_connection'
-require 'byebug'
+# require 'byebug'
 
 module Sensi
 
@@ -273,10 +273,10 @@ module Sensi
 			case mode
 			when 'Heat'
 				return true if system_temperature(type: :heat) == temperature
-				result = @thermostat_connection.set(self.icd, 'SetHeat', temperature.to_s.capitalize, scale.to_s.capitalize) 
+				result = @thermostat_connection.set(self.icd, 'SetHeat', temperature.to_s, scale.to_s.capitalize) 
 			when 'Cool'
 				return true if system_temperature(type: :cool) == temperature
-				result = @thermostat_connection.set(self.icd, 'SetCool', temperature.to_s.capitalize, scale.to_s.capitalize) 
+				result = @thermostat_connection.set(self.icd, 'SetCool', temperature.to_s, scale.to_s.capitalize) 
 			when 'Off'
 
 			when 'Auto'
