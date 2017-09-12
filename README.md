@@ -37,9 +37,9 @@ Get system settings; what should the HVAC do?
 ```ruby
 >thermostat.system_mode
 =>"Heat"
->thermostat.system_temperature :heat
+>thermostat.system_temperature type: :heat
 =>71
->thermostat.system_temperature :cool
+>thermostat.system_temperature type: :cool
 =>77
 
 # general check if system is on or off
